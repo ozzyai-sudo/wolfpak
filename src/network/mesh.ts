@@ -10,6 +10,7 @@ import { mdns } from '@libp2p/mdns';
 import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { kadDHT } from '@libp2p/kad-dht';
 import { identify } from '@libp2p/identify';
+import { ping } from '@libp2p/ping';
 import { loadPack, savePack, type PackConfig, type PackMember } from '../core/pack.js';
 import { loadIdentity } from '../core/identity.js';
 
@@ -53,6 +54,7 @@ export async function startMesh(port: number = 4002, callbacks: MeshCallbacks = 
         clientMode: false,
       }),
       identify: identify(),
+      ping: ping(),
     },
   });
 
