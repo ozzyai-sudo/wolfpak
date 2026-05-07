@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Pool your machines into one AI cluster. Open source. Run anywhere. Own your inference.",
   "type": "module",
-  "main": "electron/main.js",
+  "main": "electron/main.cjs",
   "bin": {
     "wolfpak": "./bin/wolfpak.js"
   },
@@ -75,9 +75,11 @@
         { "target": "deb", "arch": ["x64"] }
       ],
       "desktop": {
-        "Name": "WOLFPAK AI",
-        "Comment": "Pool your machines into one AI cluster",
-        "Terminal": "false"
+        "entry": {
+          "Name": "WOLFPAK AI",
+          "Comment": "Pool your machines into one AI cluster",
+          "Terminal": "false"
+        }
       }
     }
   },
