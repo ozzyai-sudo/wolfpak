@@ -287,17 +287,104 @@ function InfoRow({ label, value, mono }) {
 function Pack() {
   const { data, loading, refetch } = useFetch('/admin/pack', 5000);
   const [showInvite, setShowInvite] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [joinInvite, setJoinInvite] = useState('');
+  const [joinKey, setJoinKey] = useState('');
+  const [createResult, setCreateResult] = useState(null);
+
+  const doCreate = async () => {
+    if (!createName.trim()) return;
+    const res = await fetch(API + '/admin/pack/create', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ name: createName.trim() }),
+    });
+    const json = await res.json();
+    if (json.success) { setCreateResult(json); refetch(); }
+    else { alert('Error: ' + json.error); }
+  };
+
+  const doJoin = async () => {
+    if (!joinInvite.trim() || !joinKey.trim()) return;
+    const res = await fetch(API + '/admin/pack/join', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ invite: joinInvite.trim(), key: joinKey.trim() }),
+    });
+    const json = await res.json();
+    if (json.success) { setShowJoin(false); refetch(); alert('Joined pack: ' + json.name); }
+    else { alert('Error: ' + json.error); }
+  };
 
   if (loading) return <div className="content"><p>Loading...</p></div>;
   if (!data || !data.active) return (
     <div className="content">
-      <div className="card" style={{textAlign: 'center', padding: 60}}>
-        <h2 style={{marginBottom: 12}}>No Active Pack</h2>
-        <p style={{color: 'var(--text-dim)'}}>Create or join a pack via the CLI:</p>
-        <code style={{display: 'block', margin: '16px auto', padding: 12, background: 'var(--bg3)', borderRadius: 8, maxWidth: 400}}>
-          wolfpak create my-pack
-        </code>
-      </div>
+      {!showCreate && !showJoin && (
+        <div className="card" style={{textAlign: 'center', padding: 60}}>
+          <h2 style={{marginBottom: 12}}>No Active Pack</h2>
+          <p style={{color: 'var(--text-dim)', marginBottom: 24}}>Create a new pack or join an existing one</p>
+          <div style={{display: 'flex', gap: 12, justifyContent: 'center'}}>
+            <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Create Pack</button>
+            <button className="btn btn-outline" onClick={() => setShowJoin(true)}>Join Pack</button>
+          </div>
+        </div>
+      )}
+
+      {showCreate && !createResult && (
+        <div className="card" style={{maxWidth: 500, margin: '0 auto', padding: 32}}>
+          <h2 style={{marginBottom: 16}}>Create a Pack</h2>
+          <p style={{color: 'var(--text-dim)', fontSize: 13, marginBottom: 16}}>You'll become the Alpha (leader). Others can join with your invite link.</p>
+          <div style={{marginBottom: 12}}>
+            <div style={{fontSize: 12, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 4}}>Pack Name</div>
+            <input value={createName} onChange={e => setCreateName(e.target.value)} placeholder="my-team"
+              onKeyDown={e => e.key === 'Enter' && doCreate()}
+              style={{width: '100%', padding: '10px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14, outline: 'none'}} autoFocus />
+          </div>
+          <div style={{display: 'flex', gap: 8}}>
+            <button className="btn btn-primary" onClick={doCreate}>Create</button>
+            <button className="btn btn-outline" onClick={() => setShowCreate(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {createResult && (
+        <div className="card" style={{maxWidth: 500, margin: '0 auto', padding: 32}}>
+          <h2 style={{color: 'var(--green)', marginBottom: 16}}>Pack Created!</h2>
+          <div style={{marginBottom: 12}}>
+            <div style={{fontSize: 12, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 4}}>Invite Link (click to copy)</div>
+            <input readOnly value={createResult.inviteLink} onClick={e => { e.target.select(); navigator.clipboard.writeText(createResult.inviteLink); }}
+              style={{width: '100%', padding: 10, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 12, fontFamily: 'monospace', cursor: 'pointer', outline: 'none'}} />
+          </div>
+          <div style={{marginBottom: 16}}>
+            <div style={{fontSize: 12, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 4}}>Encryption Key (share separately!)</div>
+            <input readOnly value={createResult.encryptionKey} onClick={e => { e.target.select(); navigator.clipboard.writeText(createResult.encryptionKey); }}
+              style={{width: '100%', padding: 10, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 12, fontFamily: 'monospace', cursor: 'pointer', outline: 'none'}} />
+          </div>
+          <p style={{color: 'var(--text-dim)', fontSize: 12, marginBottom: 16}}>Share the invite link and key through DIFFERENT channels for security.</p>
+          <button className="btn btn-primary" onClick={() => { setCreateResult(null); setShowCreate(false); }}>Done</button>
+        </div>
+      )}
+
+      {showJoin && (
+        <div className="card" style={{maxWidth: 500, margin: '0 auto', padding: 32}}>
+          <h2 style={{marginBottom: 16}}>Join a Pack</h2>
+          <p style={{color: 'var(--text-dim)', fontSize: 13, marginBottom: 16}}>Paste the invite link and encryption key from the pack's Alpha.</p>
+          <div style={{marginBottom: 12}}>
+            <div style={{fontSize: 12, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 4}}>Invite Link</div>
+            <input value={joinInvite} onChange={e => setJoinInvite(e.target.value)} placeholder="wolfpak://join/..."
+              style={{width: '100%', padding: '10px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, fontFamily: 'monospace', outline: 'none'}} autoFocus />
+          </div>
+          <div style={{marginBottom: 16}}>
+            <div style={{fontSize: 12, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 4}}>Encryption Key</div>
+            <input value={joinKey} onChange={e => setJoinKey(e.target.value)} placeholder="abc123..."
+              style={{width: '100%', padding: '10px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, fontFamily: 'monospace', outline: 'none'}} />
+          </div>
+          <div style={{display: 'flex', gap: 8}}>
+            <button className="btn btn-primary" onClick={doJoin}>Join Pack</button>
+            <button className="btn btn-outline" onClick={() => setShowJoin(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 

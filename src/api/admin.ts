@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import os from 'os';
 import { loadIdentity, getWolfpakDir } from '../core/identity.js';
-import { loadPack, savePack, addProvider, getInviteLink } from '../core/pack.js';
+import { loadPack, savePack, addProvider, getInviteLink, createPack, parseInvite, joinPack } from '../core/pack.js';
 import { listModels, recommendedModelTier, getCurrentModel, loadModel, unloadModel, ensureModelsDir } from '../inference/engine.js';
 import { MODEL_CATALOG, getCompatibleModels, getRecommendedModel } from '../inference/catalog.js';
 import { getMesh } from '../network/mesh.js';
@@ -97,6 +97,27 @@ export function createAdminRouter(): Router {
     pack.members = pack.members.filter(m => m.peerId !== req.params.peerId);
     savePack(pack);
     res.json({ success: true, members: pack.members.length });
+  });
+
+  router.post('/pack/create', (req, res) => {
+    try {
+      const pack = createPack(req.body.name || 'my-pack');
+      res.json({ success: true, packId: pack.packId, name: pack.name, inviteLink: getInviteLink(pack), encryptionKey: pack.encryptionKey });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  router.post('/pack/join', (req, res) => {
+    try {
+      const { invite, key } = req.body;
+      if (!invite || !key) return res.status(400).json({ error: 'invite and key are required' });
+      const inviteData = parseInvite(invite);
+      const pack = joinPack(inviteData, key);
+      res.json({ success: true, packId: pack.packId, name: pack.name });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
   });
 
   router.put('/pack/settings', (req, res) => {
