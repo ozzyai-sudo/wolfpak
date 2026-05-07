@@ -401,7 +401,14 @@ function Pack() {
           <div className="section-title">{data.name}</div>
           <div style={{color: 'var(--text-dim)', fontSize: 13, fontFamily: 'monospace'}}>{data.packId}</div>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowInvite(true)}>Share Invite</button>
+        <div style={{display: 'flex', gap: 8}}>
+          <button className="btn btn-primary" onClick={() => setShowInvite(true)}>Share Invite</button>
+          <button className="btn btn-danger" style={{background: 'rgba(239,68,68,0.15)', color: 'var(--red)', border: '1px solid rgba(239,68,68,0.3)'}} onClick={async () => {
+            if (!confirm('Leave this pack? You can rejoin later with the invite link.')) return;
+            await fetch(API + '/admin/pack/leave', { method: 'POST', headers: authHeaders() });
+            refetch();
+          }}>Leave Pack</button>
+        </div>
       </div>
 
       <div className="grid grid-3" style={{marginBottom: 24}}>

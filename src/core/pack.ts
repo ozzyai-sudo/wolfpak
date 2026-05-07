@@ -123,6 +123,13 @@ export function joinPack(inviteData: { packId: string; name: string; inviteCode:
     encryptionKey,
     members: [
       {
+        peerId: inviteData.createdBy,
+        displayName: 'alpha',
+        joinedAt: new Date().toISOString(),
+        role: 'alpha' as const,
+        capabilities: ['relay', 'storage', 'inference', 'embedding', 'orchestration'],
+      },
+      {
         peerId: identity.peerId,
         displayName: identity.displayName,
         joinedAt: new Date().toISOString(),

@@ -120,6 +120,16 @@ export function createAdminRouter(): Router {
     }
   });
 
+  router.post('/pack/leave', (_req, res) => {
+    try {
+      const packFile = path.join(getWolfpakDir(), 'pack.json');
+      if (fs.existsSync(packFile)) fs.unlinkSync(packFile);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
   router.put('/pack/settings', (req, res) => {
     const pack = loadPack();
     if (!pack) return res.status(404).json({ error: 'No active pack' });
