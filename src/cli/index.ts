@@ -16,6 +16,7 @@ import { startMesh, stopMesh, getMesh, announcePresence } from '../network/mesh.
 import { startAPI, stopAPI } from '../api/server.js';
 import { listModels, loadModel, recommendedModelTier, infer, unloadModel, ensureModelsDir } from '../inference/engine.js';
 import { createCapsule, restoreCapsule } from '../core/capsule.js';
+import { getOrCreateSecurityConfig, regenerateToken } from '../core/security.js';
 
 const VERSION = '0.1.0';
 
@@ -140,9 +141,12 @@ program
       await startAPI(parseInt(opts.apiPort));
 
       console.log();
+      const secConfig = getOrCreateSecurityConfig();
       console.log(chalk.green.bold('✓ WOLFPAK is running'));
       console.log(chalk.gray(`  API:   http://localhost:${opts.apiPort}/v1/chat/completions`));
       console.log(chalk.gray(`  Mesh:  port ${opts.port}`));
+      console.log(chalk.hex('#F59E0B')(`  Token: ${secConfig.apiToken}`));
+      console.log(chalk.gray(`  Auth:  Authorization: Bearer <token>`));
       console.log(chalk.gray(`  Ctrl+C to stop`));
 
       // Graceful shutdown

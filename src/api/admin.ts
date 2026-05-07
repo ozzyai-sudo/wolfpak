@@ -10,6 +10,14 @@ import { listModels, recommendedModelTier, getCurrentModel, loadModel, unloadMod
 import { getMesh } from '../network/mesh.js';
 import { getDashboardStats, getInferenceLogs, getNodeEvents, getProviderUsageSummary } from '../db/store.js';
 import { createCapsule } from '../core/capsule.js';
+import {
+  loadSecurityConfig,
+  getOrCreateSecurityConfig,
+  saveSecurityConfig,
+  regenerateToken,
+  approvePeer,
+  rejectPeer,
+} from '../core/security.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -227,6 +235,46 @@ export function createAdminRouter(): Router {
       dbSizeKB: dbSize,
       loadAvg: os.loadavg(),
     });
+  });
+
+  // ─── SECURITY ───────────────────────────────────────────────
+  router.get('/security', (_req, res) => {
+    const config = getOrCreateSecurityConfig();
+    res.json({
+      tokenPreview: config.apiToken.slice(0, 12) + '...',
+      pendingPeers: config.pendingPeers,
+      approvedPeers: config.approvedPeers,
+      blockedPeers: config.blockedPeers,
+      rateLimits: config.rateLimits,
+    });
+  });
+
+  router.get('/security/token', (_req, res) => {
+    const config = getOrCreateSecurityConfig();
+    res.json({ token: config.apiToken });
+  });
+
+  router.post('/security/token/regenerate', (_req, res) => {
+    const newToken = regenerateToken();
+    res.json({ success: true, token: newToken });
+  });
+
+  router.post('/security/peers/:peerId/approve', (req, res) => {
+    const ok = approvePeer(req.params.peerId);
+    res.json({ success: ok });
+  });
+
+  router.post('/security/peers/:peerId/reject', (req, res) => {
+    const ok = rejectPeer(req.params.peerId);
+    res.json({ success: ok });
+  });
+
+  router.put('/security/rate-limits', (req, res) => {
+    const config = getOrCreateSecurityConfig();
+    if (req.body.requestsPerMinute) config.rateLimits.requestsPerMinute = req.body.requestsPerMinute;
+    if (req.body.requestsPerHour) config.rateLimits.requestsPerHour = req.body.requestsPerHour;
+    saveSecurityConfig(config);
+    res.json({ success: true, rateLimits: config.rateLimits });
   });
 
   return router;

@@ -13,6 +13,7 @@ import { identify } from '@libp2p/identify';
 import { ping } from '@libp2p/ping';
 import { loadPack, savePack, type PackConfig, type PackMember } from '../core/pack.js';
 import { loadIdentity } from '../core/identity.js';
+import { isPeerApproved, isPeerBlocked, addPendingPeer } from '../core/security.js';
 
 const WOLFPAK_PROTOCOL = '/wolfpak/1.0.0';
 const PACK_TOPIC = 'wolfpak-pack-sync';
@@ -207,15 +208,41 @@ export async function connectToPeer(multiaddr: string): Promise<void> {
 function handlePackMessage(data: any, callbacks: MeshCallbacks): void {
   const { type, from, payload } = data;
 
+  // Block messages from blocked peers
+  if (from && isPeerBlocked(from)) {
+    console.log(`[mesh] Blocked message from banned peer: ${from}`);
+    return;
+  }
+
   switch (type) {
     case 'presence': {
       const pack = loadPack();
       if (!pack) break;
+
+      // Check if peer is blocked
+      if (isPeerBlocked(payload.peerId)) {
+        console.log(`[mesh] Rejected presence from blocked peer: ${payload.peerId}`);
+        break;
+      }
+
       const existing = pack.members.find((m) => m.peerId === payload.peerId);
       if (existing) {
         existing.lastSeen = new Date().toISOString();
         existing.capabilities = payload.capabilities;
       } else if (payload.packId === pack.packId) {
+        // New peer — check if approved
+        if (!isPeerApproved(payload.peerId)) {
+          // Add to pending queue for Alpha approval
+          addPendingPeer({
+            peerId: payload.peerId,
+            displayName: payload.displayName,
+            requestedAt: new Date().toISOString(),
+            capabilities: payload.capabilities,
+          });
+          console.log(`[mesh] New peer pending approval: ${payload.displayName} (${payload.peerId})`);
+          break;
+        }
+
         pack.members.push({
           peerId: payload.peerId,
           displayName: payload.displayName,
