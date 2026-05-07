@@ -4,6 +4,7 @@
  * Pool your machines into one AI cluster.
  * Open source. Run anywhere. Own your inference.
  */
+import '../polyfills.js';
 import { Command } from 'commander';
 import chalk from 'chalk';
 import os from 'os';
