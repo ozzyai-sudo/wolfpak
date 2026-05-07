@@ -15,6 +15,7 @@ import { createPack, loadPack, getInviteLink, parseInvite, joinPack, addProvider
 import { startMesh, stopMesh, getMesh, announcePresence } from '../network/mesh.js';
 import { startAPI, stopAPI } from '../api/server.js';
 import { listModels, loadModel, recommendedModelTier, infer, unloadModel, ensureModelsDir } from '../inference/engine.js';
+import { MODEL_CATALOG, getCompatibleModels, getRecommendedModel, findModel } from '../inference/catalog.js';
 import { createCapsule, restoreCapsule } from '../core/capsule.js';
 import { getOrCreateSecurityConfig, regenerateToken, approvePeer as approveP, rejectPeer as rejectP } from '../core/security.js';
 
@@ -269,19 +270,84 @@ modelsCmd
   });
 
 modelsCmd
-  .command('pull <url>')
-  .description('Download a GGUF model from URL')
-  .action(async (url) => {
-    const modelsDir = ensureModelsDir();
-    const filename = url.split('/').pop() || 'model.gguf';
-    const destPath = path.join(modelsDir, filename);
+  .command('available')
+  .description('Show all models available to download')
+  .action(() => {
+    const totalGB = Math.round(os.totalmem() / (1024 * 1024 * 1024));
+    const rec = getRecommendedModel();
+    console.log(chalk.hex('#8B5CF6').bold('\n  Available Models\n'));
+    console.log(chalk.gray(`  Your RAM: ${totalGB}GB | Recommended: ${rec?.id || 'none'}\n`));
 
-    console.log(chalk.gray(`Downloading ${filename}...`));
+    const tiers = [
+      { label: 'Tiny (4GB RAM)', min: 4, max: 7 },
+      { label: 'Small (8GB RAM)', min: 8, max: 15 },
+      { label: 'Medium (16GB RAM)', min: 16, max: 31 },
+      { label: 'Large (32GB RAM)', min: 32, max: 63 },
+      { label: 'XL (64GB+ RAM)', min: 64, max: 999 },
+    ];
+
+    for (const tier of tiers) {
+      const models = MODEL_CATALOG.filter(m => m.minRAM >= tier.min && m.minRAM <= tier.max);
+      if (models.length === 0) continue;
+      const canRun = totalGB >= tier.min;
+      const tierColor = canRun ? chalk.green : chalk.red;
+      console.log(tierColor(`  ${tier.label} ${canRun ? '✓' : '✗ (need more RAM)'}`));
+      for (const m of models) {
+        const isRec = m.id === rec?.id ? chalk.hex('#F59E0B')(' ★ RECOMMENDED') : '';
+        console.log(chalk.gray(`    ${chalk.white(m.id.padEnd(16))} ${m.size.padEnd(8)} ${m.name} — ${m.description}${isRec}`));
+      }
+      console.log();
+    }
+    console.log(chalk.gray('  Download: wolfpak models pull <model-id>'));
+    console.log(chalk.gray('  Auto:     wolfpak models pull auto'));
+    console.log();
+  });
+
+modelsCmd
+  .command('pull <nameOrUrl>')
+  .description('Download a model by ID (e.g. qwen3-8b) or URL')
+  .action(async (nameOrUrl) => {
+    const modelsDir = ensureModelsDir();
+    let url: string;
+    let filename: string;
+
+    if (nameOrUrl === 'auto') {
+      const rec = getRecommendedModel();
+      if (!rec) {
+        console.log(chalk.red('✗ No compatible model found for your system.'));
+        return;
+      }
+      console.log(chalk.hex('#8B5CF6')(`Auto-selected: ${rec.name} (${rec.size})`));
+      url = rec.url;
+      filename = rec.url.split('/').pop() || 'model.gguf';
+    } else if (nameOrUrl.startsWith('http')) {
+      url = nameOrUrl;
+      filename = nameOrUrl.split('/').pop() || 'model.gguf';
+    } else {
+      const model = findModel(nameOrUrl);
+      if (!model) {
+        console.log(chalk.red(`✗ Model "${nameOrUrl}" not found in catalog.`));
+        console.log(chalk.gray('  Run: wolfpak models available'));
+        return;
+      }
+      const totalGB = Math.round(os.totalmem() / (1024 * 1024 * 1024));
+      if (totalGB < model.minRAM) {
+        console.log(chalk.yellow(`⚠ Warning: ${model.name} needs ${model.minRAM}GB RAM, you have ${totalGB}GB.`));
+        console.log(chalk.yellow('  It may run slowly or crash. Continue anyway...'));
+      }
+      console.log(chalk.hex('#8B5CF6')(`Downloading: ${model.name} (${model.size})`));
+      url = model.url;
+      filename = model.url.split('/').pop() || 'model.gguf';
+    }
+
+    const destPath = path.join(modelsDir, filename);
     console.log(chalk.gray(`Destination: ${destPath}`));
+    console.log();
 
     try {
-      execFileSync('curl', ['-L', '-o', destPath, url], { stdio: 'inherit' });
-      console.log(chalk.green(`✓ Model downloaded: ${filename}`));
+      execFileSync('curl', ['-L', '--progress-bar', '-o', destPath, url], { stdio: 'inherit' });
+      console.log(chalk.green(`\n✓ Model downloaded: ${filename}`));
+      console.log(chalk.gray(`  Load it: wolfpak models load ${filename.replace('.gguf', '')}`));
     } catch (err: any) {
       console.log(chalk.red(`✗ Download failed: ${err.message}`));
     }
@@ -304,15 +370,27 @@ modelsCmd
   .command('recommend')
   .description('Show recommended model for your hardware')
   .action(() => {
-    const rec = recommendedModelTier();
+    const totalGB = Math.round(os.totalmem() / (1024 * 1024 * 1024));
+    const rec = getRecommendedModel();
+    const compatible = getCompatibleModels();
     console.log(chalk.hex('#8B5CF6').bold('\n  Hardware Detection\n'));
-    console.log(chalk.gray(`  System RAM:    ${rec.vram}`));
-    console.log(chalk.gray(`  Recommended:   ${rec.recommended}`));
+    console.log(chalk.gray(`  System RAM:    ${totalGB}GB`));
     console.log(chalk.gray(`  Platform:      ${os.platform()} ${os.arch()}`));
     console.log(chalk.gray(`  CPUs:          ${os.cpus().length}`));
+    console.log(chalk.gray(`  Compatible:    ${compatible.length} models can run on this machine`));
     console.log();
-    console.log(chalk.gray('  Download from HuggingFace:'));
-    console.log(chalk.gray('  wolfpak models pull https://huggingface.co/.../model.gguf'));
+    if (rec) {
+      console.log(chalk.white(`  ★ Recommended: ${rec.name} (${rec.size})`));
+      console.log(chalk.gray(`    ${rec.description}`));
+      console.log();
+      console.log(chalk.hex('#8B5CF6')(`  Download now:`));
+      console.log(chalk.white(`    wolfpak models pull ${rec.id}`));
+      console.log();
+      console.log(chalk.gray(`  Or auto-download the best model:`));
+      console.log(chalk.white(`    wolfpak models pull auto`));
+    } else {
+      console.log(chalk.red('  No compatible models found.'));
+    }
     console.log();
   });
 

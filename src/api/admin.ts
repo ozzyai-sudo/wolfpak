@@ -7,6 +7,7 @@ import os from 'os';
 import { loadIdentity, getWolfpakDir } from '../core/identity.js';
 import { loadPack, savePack, addProvider, getInviteLink } from '../core/pack.js';
 import { listModels, recommendedModelTier, getCurrentModel, loadModel, unloadModel, ensureModelsDir } from '../inference/engine.js';
+import { MODEL_CATALOG, getCompatibleModels, getRecommendedModel } from '../inference/catalog.js';
 import { getMesh } from '../network/mesh.js';
 import { getDashboardStats, getInferenceLogs, getNodeEvents, getProviderUsageSummary } from '../db/store.js';
 import { createCapsule } from '../core/capsule.js';
@@ -159,6 +160,8 @@ export function createAdminRouter(): Router {
   router.get('/models', (_req, res) => {
     const models = listModels();
     const rec = recommendedModelTier();
+    const recModel = getRecommendedModel();
+    const compatible = getCompatibleModels();
     res.json({
       models: models.map(m => ({
         ...m,
@@ -166,6 +169,9 @@ export function createAdminRouter(): Router {
       })),
       currentModel: getCurrentModel(),
       recommended: rec,
+      catalog: MODEL_CATALOG,
+      compatibleCatalog: compatible,
+      recommendedModel: recModel,
     });
   });
 
