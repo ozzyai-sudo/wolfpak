@@ -55,7 +55,7 @@ export async function startMesh(port: number = 4002, callbacks: MeshCallbacks = 
       }),
       identify: identify(),
       ping: ping(),
-    },
+    } as any,
   });
 
   await node.start();

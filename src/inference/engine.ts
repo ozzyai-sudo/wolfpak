@@ -95,8 +95,9 @@ export function recommendedModelTier(): { vram: string; recommended: string } {
  */
 export async function loadModel(modelPath: string): Promise<void> {
   try {
-    const { getLlama } = await import('node-llama-cpp');
-    llamaInstance = await getLlama();
+    // Dynamic import — node-llama-cpp is optional (only needed for local inference)
+    const llamaCpp: any = await import(/* webpackIgnore: true */ 'node-llama-cpp' + '');
+    llamaInstance = await llamaCpp.getLlama();
 
     const fullPath = modelPath.startsWith('/') ? modelPath : path.join(MODELS_DIR, modelPath);
     if (!fs.existsSync(fullPath)) {
@@ -122,7 +123,9 @@ export async function inferLocal(request: InferenceRequest): Promise<InferenceRe
   }
 
   const context = await llamaModel.createContext();
-  const session = new (await import('node-llama-cpp')).LlamaChatSession({ contextSequence: context.getSequence() });
+  // Dynamic import — node-llama-cpp is optional (only needed for local inference)
+  const llamaCpp: any = await import(/* webpackIgnore: true */ 'node-llama-cpp' + '');
+  const session = new llamaCpp.LlamaChatSession({ contextSequence: context.getSequence() });
 
   const lastMessage = request.messages[request.messages.length - 1];
   const prompt = lastMessage?.content || '';
