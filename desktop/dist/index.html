@@ -155,13 +155,29 @@ const { useState, useEffect, useRef } = React;
 
 const API = window.location.origin;
 
+function getToken() {
+  return localStorage.getItem('wolfpak_token') || '';
+}
+function setToken(t) {
+  localStorage.setItem('wolfpak_token', t);
+}
+function authHeaders() {
+  const t = getToken();
+  return t ? { 'Authorization': 'Bearer ' + t } : {};
+}
+
 function useFetch(url, interval = 0) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
-      const res = await fetch(API + url);
+      const res = await fetch(API + url, { headers: authHeaders() });
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('wolfpak_token');
+        window.location.reload();
+        return;
+      }
       const json = await res.json();
       setData(json);
     } catch (e) {
@@ -287,7 +303,7 @@ function Pack() {
 
   const removeMember = async (peerId) => {
     if (!confirm('Remove this member?')) return;
-    await fetch(API + '/admin/pack/members/' + peerId, { method: 'DELETE' });
+    await fetch(API + '/admin/pack/members/' + peerId, { method: 'DELETE', headers: authHeaders() });
     refetch();
   };
 
@@ -361,7 +377,7 @@ function Providers() {
   const addProvider = async () => {
     await fetch(API + '/admin/providers', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(form),
     });
     setShowAdd(false);
@@ -371,7 +387,7 @@ function Providers() {
 
   const removeProvider = async (name) => {
     if (!confirm(`Remove provider "${name}"?`)) return;
-    await fetch(API + '/admin/providers/' + name, { method: 'DELETE' });
+    await fetch(API + '/admin/providers/' + name, { method: 'DELETE', headers: authHeaders() });
     refetch();
   };
 
@@ -454,14 +470,14 @@ function Models() {
   const loadModel = async (name) => {
     await fetch(API + '/admin/models/load', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ name }),
     });
     refetch();
   };
 
   const unloadModel = async () => {
-    await fetch(API + '/admin/models/unload', { method: 'POST' });
+    await fetch(API + '/admin/models/unload', { method: 'POST', headers: authHeaders() });
     refetch();
   };
 
@@ -534,7 +550,7 @@ function Chat() {
     try {
       const res = await fetch(API + '/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ messages: newMessages, model: 'auto' }),
       });
       const data = await res.json();
@@ -671,7 +687,7 @@ function System() {
   if (loading || !data) return <div className="content"><p>Loading...</p></div>;
 
   const createBackup = async () => {
-    const res = await fetch(API + '/admin/capsule/create', { method: 'POST' });
+    const res = await fetch(API + '/admin/capsule/create', { method: 'POST', headers: authHeaders() });
     const json = await res.json();
     alert(json.success ? `Capsule saved: ${json.path}` : `Error: ${json.error}`);
   };
@@ -777,7 +793,88 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+// ─── LOGIN SCREEN ───────────────────────────────────────────
+function LoginScreen() {
+  const [token, setTokenInput] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch(API + '/admin/system', {
+        headers: { 'Authorization': 'Bearer ' + token.trim() }
+      });
+      if (res.ok) {
+        setToken(token.trim());
+        window.location.reload();
+      } else {
+        setError('Invalid token. Run "wolfpak token" in CLI to get your token.');
+      }
+    } catch {
+      setError('Cannot connect to WOLFPAK server. Is it running? (wolfpak start)');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'var(--bg)'}}>
+      <form onSubmit={handleLogin} style={{width:420,textAlign:'center'}}>
+        <div style={{fontSize:48,marginBottom:16}}>&#128058;</div>
+        <h1 style={{fontSize:32,fontWeight:800,color:'var(--purple)',marginBottom:4}}>WOLFPAK AI</h1>
+        <p style={{color:'var(--text-dim)',marginBottom:32}}>Enter your API token to continue</p>
+        <input
+          type="password"
+          placeholder="wpk_..."
+          value={token}
+          onChange={e => setTokenInput(e.target.value)}
+          style={{width:'100%',padding:'14px 18px',background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:10,color:'var(--text)',fontSize:14,outline:'none',marginBottom:12,fontFamily:'monospace'}}
+          autoFocus
+        />
+        {error && <p style={{color:'var(--red)',fontSize:13,marginBottom:12}}>{error}</p>}
+        <button type="submit" disabled={loading || !token.trim()}
+          style={{width:'100%',padding:'14px',background:'var(--purple)',color:'white',border:'none',borderRadius:10,fontSize:14,fontWeight:600,cursor:'pointer',opacity:loading?0.5:1}}>
+          {loading ? 'Connecting...' : 'Login'}
+        </button>
+        <p style={{color:'var(--text-dim)',fontSize:12,marginTop:20}}>
+          Get your token by running: <code style={{background:'var(--bg3)',padding:'2px 8px',borderRadius:4}}>wolfpak token</code>
+        </p>
+      </form>
+    </div>
+  );
+}
+
+// ─── ROOT ───────────────────────────────────────────────────
+function Root() {
+  const [authed, setAuthed] = useState(null);
+
+  useEffect(() => {
+    const t = getToken();
+    if (!t) { setAuthed(false); return; }
+    // Validate token
+    fetch(API + '/health').then(res => {
+      if (res.ok) {
+        // Health works without auth, verify token against admin
+        return fetch(API + '/admin/system', { headers: { 'Authorization': 'Bearer ' + t } });
+      }
+      throw new Error('Server down');
+    }).then(res => {
+      setAuthed(res.ok);
+      if (!res.ok) localStorage.removeItem('wolfpak_token');
+    }).catch(() => {
+      // Server not running — show login anyway
+      setAuthed(false);
+    });
+  }, []);
+
+  if (authed === null) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'var(--purple)',fontSize:18}}>Connecting to WOLFPAK...</div>;
+  if (!authed) return <LoginScreen />;
+  return <App />;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
 </script>
 </body>
 </html>

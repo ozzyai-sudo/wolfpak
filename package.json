@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Pool your machines into one AI cluster. Open source. Run anywhere. Own your inference.",
   "type": "module",
-  "main": "dist/cli/index.js",
+  "main": "electron/main.js",
   "bin": {
     "wolfpak": "./bin/wolfpak.js"
   },
@@ -11,28 +11,75 @@
     "build": "tsc",
     "dev": "tsx src/cli/index.ts",
     "start": "node dist/cli/index.js",
-    "wolfpak": "tsx src/cli/index.ts"
+    "wolfpak": "tsx src/cli/index.ts",
+    "desktop": "electron .",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "dist:all": "electron-builder --mac --win --linux"
   },
   "keywords": [
-    "ai",
-    "p2p",
-    "mesh",
-    "inference",
-    "llm",
-    "gguf",
-    "cluster",
-    "distributed",
-    "wolfpak"
+    "ai", "p2p", "mesh", "inference", "llm", "gguf",
+    "cluster", "distributed", "wolfpak", "desktop"
   ],
   "author": "WOLFPAK AI",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/wolfpak-ai/wolfpak"
+    "url": "https://github.com/ozzyai-sudo/wolfpak"
   },
-  "homepage": "https://github.com/wolfpak-ai/wolfpak",
+  "homepage": "https://github.com/ozzyai-sudo/wolfpak",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "build": {
+    "appId": "ai.wolfpak.app",
+    "productName": "WOLFPAK AI",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "desktop/**/*",
+      "src/**/*",
+      "bin/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "tsconfig.json"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "electron/icons/icon.icns",
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ]
+    },
+    "win": {
+      "icon": "electron/icons/icon.ico",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WOLFPAK AI"
+    },
+    "linux": {
+      "icon": "electron/icons/icon.png",
+      "category": "Development",
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb", "arch": ["x64"] }
+      ],
+      "desktop": {
+        "Name": "WOLFPAK AI",
+        "Comment": "Pool your machines into one AI cluster",
+        "Terminal": "false"
+      }
+    }
   },
   "dependencies": {
     "@chainsafe/libp2p-gossipsub": "^14.1.2",
@@ -61,6 +108,8 @@
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.0",
     "@types/uuid": "^10.0.0",
+    "electron": "^42.0.0",
+    "electron-builder": "^26.8.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   }
