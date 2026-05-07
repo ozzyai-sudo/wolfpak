@@ -3,10 +3,13 @@
  * Drop-in replacement API at localhost:8787/v1
  */
 import express from 'express';
+import fs from 'fs';
 import { infer, listModels, getCurrentModel, type InferenceRequest } from '../inference/engine.js';
 import { loadPack } from '../core/pack.js';
 import { loadIdentity } from '../core/identity.js';
 import { getMesh } from '../network/mesh.js';
+import { createAdminRouter } from './admin.js';
+import { logInference } from '../db/store.js';
 
 let server: any = null;
 
@@ -26,6 +29,15 @@ export function startAPI(port: number = 8787): Promise<void> {
       if (_req.method === 'OPTIONS') return res.sendStatus(200);
       next();
     });
+
+    // Serve desktop app static files
+    const desktopPath = new URL('../../desktop/dist', import.meta.url).pathname;
+    if (fs.existsSync(desktopPath)) {
+      app.use('/app', express.static(desktopPath));
+    }
+
+    // Admin API
+    app.use('/admin', createAdminRouter());
 
     // Health check
     app.get('/health', (_req, res) => {
@@ -91,7 +103,24 @@ export function startAPI(port: number = 8787): Promise<void> {
           return res.status(501).json({ error: { message: 'Streaming not yet supported', type: 'not_implemented' } });
         }
 
+        const startTime = Date.now();
         const response = await infer(request);
+        const latencyMs = Date.now() - startTime;
+
+        // Log the inference
+        try {
+          logInference({
+            requestId: response.id,
+            model: response.model,
+            source: response.source,
+            promptPreview: request.messages[request.messages.length - 1]?.content || '',
+            responsePreview: response.choices[0]?.message?.content || '',
+            promptTokens: response.usage.prompt_tokens,
+            completionTokens: response.usage.completion_tokens,
+            latencyMs,
+          });
+        } catch {}
+
         res.json(response);
       } catch (err: any) {
         console.error('[api] Inference error:', err.message);
