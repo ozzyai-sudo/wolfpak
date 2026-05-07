@@ -99,7 +99,7 @@ wolfpak init --name "office-desktop"
 
 ```
 ✓ Identity created
-  Peer ID:  wpk_70dad0809a3db615c7d88a5944dc8f5a
+  Peer ID:  wpk_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
   Name:     office-desktop
   Config:   /home/user/.wolfpak
 ```
@@ -227,7 +227,7 @@ wolfpak status
   WOLFPAK STATUS
 
   Node
-    Peer ID:      wpk_70dad0809a3db615c7d88a5944dc8f5a
+    Peer ID:      wpk_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
     Name:         ozzy-macbook
     RAM:          32GB
     Platform:     darwin x64

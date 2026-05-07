@@ -16,7 +16,7 @@ import { startMesh, stopMesh, getMesh, announcePresence } from '../network/mesh.
 import { startAPI, stopAPI } from '../api/server.js';
 import { listModels, loadModel, recommendedModelTier, infer, unloadModel, ensureModelsDir } from '../inference/engine.js';
 import { createCapsule, restoreCapsule } from '../core/capsule.js';
-import { getOrCreateSecurityConfig, regenerateToken } from '../core/security.js';
+import { getOrCreateSecurityConfig, regenerateToken, approvePeer as approveP, rejectPeer as rejectP } from '../core/security.js';
 
 const VERSION = '0.1.0';
 
@@ -462,6 +462,123 @@ program
     console.log(chalk.white('  Encryption key (share separately):'));
     console.log(chalk.white.bold(`  ${pack.encryptionKey}`));
     console.log();
+  });
+
+// ─── PEERS ──────────────────────────────────────────────────────
+const peersCmd = program
+  .command('peers')
+  .description('Manage peer approvals');
+
+peersCmd
+  .command('pending')
+  .description('Show peers waiting for approval')
+  .action(() => {
+    const sec = getOrCreateSecurityConfig();
+    if (sec.pendingPeers.length === 0) {
+      console.log(chalk.green('  No pending peers.'));
+      return;
+    }
+    console.log(chalk.hex('#F59E0B').bold(`\n  ${sec.pendingPeers.length} Pending Peer(s)\n`));
+    sec.pendingPeers.forEach((p, i) => {
+      console.log(chalk.white(`  ${i + 1}. ${p.displayName}`));
+      console.log(chalk.gray(`     ID:   ${p.peerId}`));
+      console.log(chalk.gray(`     Caps: ${p.capabilities.join(', ')}`));
+      console.log(chalk.gray(`     Time: ${new Date(p.requestedAt).toLocaleString()}`));
+      console.log();
+    });
+    console.log(chalk.gray('  Approve: wolfpak peers approve <peer-id>'));
+    console.log(chalk.gray('  Reject:  wolfpak peers reject <peer-id>'));
+    console.log();
+  });
+
+peersCmd
+  .command('approve <peerId>')
+  .description('Approve a pending peer to join the pack')
+  .action((peerId) => {
+    const sec = getOrCreateSecurityConfig();
+
+    // Allow approving by index number (1, 2, 3...)
+    const idx = parseInt(peerId);
+    let targetId = peerId;
+    if (!isNaN(idx) && idx > 0 && idx <= sec.pendingPeers.length) {
+      targetId = sec.pendingPeers[idx - 1].peerId;
+    }
+
+    // Also allow partial peer ID match
+    if (!sec.pendingPeers.find((p: any) => p.peerId === targetId)) {
+      const match = sec.pendingPeers.find((p: any) => p.peerId.includes(targetId));
+      if (match) targetId = match.peerId;
+    }
+
+    if (approveP(targetId)) {
+      console.log(chalk.green(`✓ Peer approved: ${targetId}`));
+    } else {
+      console.log(chalk.red(`✗ Peer not found in pending list: ${peerId}`));
+    }
+  });
+
+peersCmd
+  .command('reject <peerId>')
+  .description('Reject and permanently block a peer')
+  .action((peerId) => {
+    const sec = getOrCreateSecurityConfig();
+
+    const idx = parseInt(peerId);
+    let targetId = peerId;
+    if (!isNaN(idx) && idx > 0 && idx <= sec.pendingPeers.length) {
+      targetId = sec.pendingPeers[idx - 1].peerId;
+    }
+
+    if (!sec.pendingPeers.find((p: any) => p.peerId === targetId)) {
+      const match = sec.pendingPeers.find((p: any) => p.peerId.includes(targetId));
+      if (match) targetId = match.peerId;
+    }
+
+    rejectP(targetId);
+    console.log(chalk.red(`✗ Peer rejected and blocked: ${targetId}`));
+  });
+
+peersCmd
+  .command('list')
+  .description('Show all approved and blocked peers')
+  .action(() => {
+    const sec = getOrCreateSecurityConfig();
+    console.log(chalk.hex('#8B5CF6').bold('\n  Peer Status\n'));
+
+    console.log(chalk.green(`  Approved (${sec.approvedPeers.length}):`));
+    if (sec.approvedPeers.length === 0) console.log(chalk.gray('    None'));
+    sec.approvedPeers.forEach(p => console.log(chalk.gray(`    ${chalk.green('●')} ${p}`)));
+
+    console.log();
+    console.log(chalk.red(`  Blocked (${sec.blockedPeers.length}):`));
+    if (sec.blockedPeers.length === 0) console.log(chalk.gray('    None'));
+    sec.blockedPeers.forEach(p => console.log(chalk.gray(`    ${chalk.red('●')} ${p}`)));
+
+    console.log();
+    console.log(chalk.hex('#F59E0B')(`  Pending (${sec.pendingPeers.length}):`));
+    if (sec.pendingPeers.length === 0) console.log(chalk.gray('    None'));
+    sec.pendingPeers.forEach(p => console.log(chalk.gray(`    ${chalk.hex('#F59E0B')('●')} ${p.displayName} (${p.peerId.slice(0, 20)}...)`)));
+    console.log();
+  });
+
+// ─── TOKEN ──────────────────────────────────────────────────────
+program
+  .command('token')
+  .description('Show or regenerate your API token')
+  .option('-r, --regenerate', 'Generate a new token')
+  .action((opts) => {
+    if (opts.regenerate) {
+      const newToken = regenerateToken();
+      console.log(chalk.green('✓ Token regenerated'));
+      console.log(chalk.hex('#F59E0B')(newToken));
+    } else {
+      const sec = getOrCreateSecurityConfig();
+      console.log(chalk.hex('#8B5CF6').bold('\n  API Token\n'));
+      console.log(chalk.hex('#F59E0B')(`  ${sec.apiToken}`));
+      console.log(chalk.gray('\n  Use with: Authorization: Bearer <token>'));
+      console.log(chalk.gray('  Regenerate: wolfpak token --regenerate'));
+      console.log();
+    }
   });
 
 // ─── KILL ───────────────────────────────────────────────────────
