@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WOLFPAK AI — Command Center</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #12121a;
+    --bg3: #1a1a28;
+    --purple: #8B5CF6;
+    --purple-dark: #6D28D9;
+    --purple-light: #A78BFA;
+    --green: #22C55E;
+    --red: #EF4444;
+    --yellow: #F59E0B;
+    --blue: #3B82F6;
+    --text: #E2E8F0;
+    --text-dim: #94A3B8;
+    --border: #2D2D44;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; }
+
+  /* Layout */
+  .app { display: flex; height: 100vh; }
+  .sidebar {
+    width: 240px; background: var(--bg2); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0;
+  }
+  .sidebar-logo {
+    padding: 24px 20px; border-bottom: 1px solid var(--border);
+    font-size: 20px; font-weight: 800; color: var(--purple);
+    letter-spacing: 2px;
+  }
+  .sidebar-logo span { color: var(--text-dim); font-size: 11px; font-weight: 400; display: block; letter-spacing: 0; margin-top: 4px; }
+  .nav { flex: 1; padding: 12px 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px; cursor: pointer; color: var(--text-dim);
+    font-size: 14px; transition: all 0.2s; border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--bg3); color: var(--purple-light); border-left-color: var(--purple); }
+  .nav-icon { font-size: 18px; width: 24px; text-align: center; }
+  .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-dim); }
+
+  /* Main Content */
+  .main { flex: 1; overflow-y: auto; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 32px; border-bottom: 1px solid var(--border);
+    background: var(--bg2); position: sticky; top: 0; z-index: 10;
+  }
+  .topbar h1 { font-size: 18px; font-weight: 600; }
+  .content { padding: 32px; }
+
+  /* Cards */
+  .grid { display: grid; gap: 20px; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--purple); }
+  .card-title { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .card-value { font-size: 32px; font-weight: 700; color: var(--text); }
+  .card-sub { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+
+  /* Status Badges */
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--blue); }
+  .badge-purple { background: rgba(139,92,246,0.15); color: var(--purple); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-green { background: var(--green); }
+  .dot-red { background: var(--red); }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 12px 16px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); border-bottom: 1px solid var(--border); }
+  td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: var(--bg3); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500;
+    cursor: pointer; border: none; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--purple); color: white; }
+  .btn-primary:hover { background: var(--purple-dark); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-danger:hover { opacity: 0.8; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--purple); }
+
+  /* Chat */
+  .chat-container { display: flex; flex-direction: column; height: calc(100vh - 130px); }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 20px 0; }
+  .chat-msg { display: flex; gap: 12px; margin-bottom: 16px; }
+  .chat-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0; }
+  .chat-avatar-user { background: var(--purple); color: white; }
+  .chat-avatar-ai { background: var(--bg3); color: var(--purple-light); border: 1px solid var(--border); }
+  .chat-bubble { background: var(--bg3); padding: 12px 16px; border-radius: 12px; max-width: 80%; font-size: 14px; line-height: 1.6; }
+  .chat-meta { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  .chat-input-wrap { display: flex; gap: 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .chat-input { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text); font-size: 14px; outline: none; resize: none; }
+  .chat-input:focus { border-color: var(--purple); }
+
+  /* Forms */
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .form-input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; }
+  .form-input:focus { border-color: var(--purple); }
+  select.form-input { cursor: pointer; }
+
+  /* Section Headers */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .section-title { font-size: 16px; font-weight: 600; }
+
+  /* Member Cards */
+  .member-card { display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--bg3); border-radius: 8px; margin-bottom: 8px; }
+  .member-info { flex: 1; }
+  .member-name { font-weight: 600; font-size: 14px; }
+  .member-id { font-size: 12px; color: var(--text-dim); font-family: monospace; }
+  .member-caps { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 480px; max-width: 90vw; }
+  .modal h2 { font-size: 18px; margin-bottom: 20px; }
+
+  @media (max-width: 900px) {
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(1, 1fr); }
+    .sidebar { width: 200px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const API = window.location.origin;
+
+function useFetch(url, interval = 0) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch(API + url);
+      const json = await res.json();
+      setData(json);
+    } catch (e) {
+      console.error('Fetch error:', e);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+    if (interval > 0) {
+      const id = setInterval(fetchData, interval);
+      return () => clearInterval(id);
+    }
+  }, [url]);
+
+  return { data, loading, refetch: fetchData };
+}
+
+// ─── DASHBOARD PAGE ─────────────────────────────────────────
+function Dashboard() {
+  const { data, loading } = useFetch('/admin/dashboard', 5000);
+  if (loading || !data) return <div className="content"><p>Loading...</p></div>;
+
+  const { node, pack, stats } = data;
+
+  return (
+    <div className="content">
+      <div className="grid grid-4" style={{marginBottom: 24}}>
+        <StatCard title="Mesh Status" value={node.meshOnline ? 'ONLINE' : 'OFFLINE'} sub={`${node.meshPeers} peers connected`} color={node.meshOnline ? 'green' : 'red'} />
+        <StatCard title="Pack Members" value={pack ? pack.members : 0} sub={pack ? pack.name : 'No pack'} />
+        <StatCard title="Total Requests" value={stats.allTime.total_requests} sub={`${stats.today.total_requests} today`} />
+        <StatCard title="Avg Latency" value={`${Math.round(stats.allTime.avg_latency_ms)}ms`} sub={`${Math.round(stats.today.avg_latency_ms)}ms today`} />
+      </div>
+
+      <div className="grid grid-4" style={{marginBottom: 24}}>
+        <StatCard title="Local Inference" value={stats.allTime.local_requests} sub="requests served locally" color="purple" />
+        <StatCard title="Provider Calls" value={stats.allTime.provider_requests} sub="API provider requests" color="blue" />
+        <StatCard title="Total Tokens" value={formatNum(stats.allTime.total_tokens)} sub={`${formatNum(stats.today.total_tokens)} today`} />
+        <StatCard title="Errors" value={stats.allTime.errors} sub={`${stats.today.errors} today`} color={stats.allTime.errors > 0 ? 'red' : 'green'} />
+      </div>
+
+      <div className="grid grid-2">
+        <div className="card">
+          <div className="card-title">Node Info</div>
+          <table>
+            <tbody>
+              <InfoRow label="Peer ID" value={node.peerId} mono />
+              <InfoRow label="Name" value={node.displayName} />
+              <InfoRow label="Platform" value={node.platform} />
+              <InfoRow label="CPU" value={node.cpu} />
+              <InfoRow label="RAM" value={`${node.freeRAM}GB free / ${node.totalRAM}GB total`} />
+              <InfoRow label="Model" value={node.currentModel || 'None loaded'} />
+              <InfoRow label="Uptime" value={formatUptime(node.uptime)} />
+            </tbody>
+          </table>
+        </div>
+
+        <div className="card">
+          <div className="card-title">Recent Inference</div>
+          {stats.recentLogs.length === 0 ? (
+            <p style={{color: 'var(--text-dim)', padding: '20px 0'}}>No inference requests yet</p>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Prompt</th><th>Source</th><th>Latency</th><th>Time</th></tr></thead>
+                <tbody>
+                  {stats.recentLogs.slice(0, 8).map((log, i) => (
+                    <tr key={i}>
+                      <td style={{maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{log.prompt_preview}</td>
+                      <td><span className={`badge badge-${log.source === 'local' ? 'purple' : 'blue'}`}>{log.source}</span></td>
+                      <td>{log.latency_ms}ms</td>
+                      <td style={{color: 'var(--text-dim)', fontSize: 12}}>{new Date(log.created_at).toLocaleTimeString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ title, value, sub, color }) {
+  const colorMap = { green: 'var(--green)', red: 'var(--red)', purple: 'var(--purple)', blue: 'var(--blue)', yellow: 'var(--yellow)' };
+  return (
+    <div className="card">
+      <div className="card-title">{title}</div>
+      <div className="card-value" style={color ? {color: colorMap[color]} : {}}>{value}</div>
+      {sub && <div className="card-sub">{sub}</div>}
+    </div>
+  );
+}
+
+function InfoRow({ label, value, mono }) {
+  return (
+    <tr>
+      <td style={{color: 'var(--text-dim)', width: 120}}>{label}</td>
+      <td style={mono ? {fontFamily: 'monospace', fontSize: 12} : {}}>{value}</td>
+    </tr>
+  );
+}
+
+// ─── PACK PAGE ──────────────────────────────────────────────
+function Pack() {
+  const { data, loading, refetch } = useFetch('/admin/pack', 5000);
+  const [showInvite, setShowInvite] = useState(false);
+
+  if (loading) return <div className="content"><p>Loading...</p></div>;
+  if (!data || !data.active) return (
+    <div className="content">
+      <div className="card" style={{textAlign: 'center', padding: 60}}>
+        <h2 style={{marginBottom: 12}}>No Active Pack</h2>
+        <p style={{color: 'var(--text-dim)'}}>Create or join a pack via the CLI:</p>
+        <code style={{display: 'block', margin: '16px auto', padding: 12, background: 'var(--bg3)', borderRadius: 8, maxWidth: 400}}>
+          wolfpak create my-pack
+        </code>
+      </div>
+    </div>
+  );
+
+  const removeMember = async (peerId) => {
+    if (!confirm('Remove this member?')) return;
+    await fetch(API + '/admin/pack/members/' + peerId, { method: 'DELETE' });
+    refetch();
+  };
+
+  return (
+    <div className="content">
+      <div className="section-header">
+        <div>
+          <div className="section-title">{data.name}</div>
+          <div style={{color: 'var(--text-dim)', fontSize: 13, fontFamily: 'monospace'}}>{data.packId}</div>
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowInvite(true)}>Share Invite</button>
+      </div>
+
+      <div className="grid grid-3" style={{marginBottom: 24}}>
+        <StatCard title="Members" value={data.members.length} sub={`max ${data.settings.maxMembers}`} />
+        <StatCard title="Providers" value={data.providers.length} />
+        <StatCard title="Routing" value={data.settings.routingStrategy} />
+      </div>
+
+      <div className="card">
+        <div className="card-title">Members</div>
+        {data.members.map((m, i) => (
+          <div key={i} className="member-card">
+            <div>
+              <span className={`dot ${m.online ? 'dot-green' : 'dot-red'}`} style={{display: 'inline-block'}}></span>
+            </div>
+            <div className="member-info">
+              <div className="member-name">
+                {m.role === 'alpha' && <span style={{color: '#FFD700', marginRight: 6}}>&#945;</span>}
+                {m.displayName} {m.isMe && <span style={{color: 'var(--purple)', fontSize: 12}}>(you)</span>}
+              </div>
+              <div className="member-id">{m.peerId}</div>
+              <div className="member-caps">
+                {m.capabilities.map((c, j) => <span key={j} className="badge badge-purple">{c}</span>)}
+              </div>
+            </div>
+            {!m.isMe && m.role !== 'alpha' && (
+              <button className="btn btn-danger" style={{padding: '6px 12px', fontSize: 12}} onClick={() => removeMember(m.peerId)}>Remove</button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {showInvite && (
+        <div className="modal-overlay" onClick={() => setShowInvite(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2>Pack Invite</h2>
+            <div className="form-group">
+              <label className="form-label">Invite Link</label>
+              <input className="form-input" readOnly value={data.inviteLink} onClick={e => {e.target.select(); navigator.clipboard.writeText(data.inviteLink);}} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Encryption Key (share separately)</label>
+              <input className="form-input" readOnly value={data.encryptionKey} onClick={e => {e.target.select(); navigator.clipboard.writeText(data.encryptionKey);}} />
+            </div>
+            <p style={{color: 'var(--text-dim)', fontSize: 12}}>Click to copy. Share the key through a different channel than the invite link.</p>
+            <button className="btn btn-outline" style={{marginTop: 16}} onClick={() => setShowInvite(false)}>Close</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── PROVIDERS PAGE ─────────────────────────────────────────
+function Providers() {
+  const { data, loading, refetch } = useFetch('/admin/providers', 5000);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ type: 'openrouter', name: '', apiKey: '', monthlyBudget: 0 });
+
+  const addProvider = async () => {
+    await fetch(API + '/admin/providers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+    setShowAdd(false);
+    setForm({ type: 'openrouter', name: '', apiKey: '', monthlyBudget: 0 });
+    refetch();
+  };
+
+  const removeProvider = async (name) => {
+    if (!confirm(`Remove provider "${name}"?`)) return;
+    await fetch(API + '/admin/providers/' + name, { method: 'DELETE' });
+    refetch();
+  };
+
+  if (loading) return <div className="content"><p>Loading...</p></div>;
+
+  return (
+    <div className="content">
+      <div className="section-header">
+        <div className="section-title">Shared API Providers</div>
+        <button className="btn btn-primary" onClick={() => setShowAdd(true)}>+ Add Provider</button>
+      </div>
+
+      {data.providers.length === 0 ? (
+        <div className="card" style={{textAlign: 'center', padding: 40}}>
+          <p style={{color: 'var(--text-dim)'}}>No providers configured. Add one to enable API-backed inference.</p>
+        </div>
+      ) : (
+        <div className="grid grid-3">
+          {data.providers.map((p, i) => (
+            <div key={i} className="card">
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
+                <span className={`badge badge-${p.type === 'anthropic' ? 'purple' : p.type === 'openai' ? 'green' : 'blue'}`}>{p.type}</span>
+                <button className="btn btn-danger" style={{padding: '4px 8px', fontSize: 11}} onClick={() => removeProvider(p.name)}>x</button>
+              </div>
+              <h3 style={{margin: '12px 0 4px', fontSize: 16}}>{p.name}</h3>
+              <div style={{fontSize: 12, color: 'var(--text-dim)', fontFamily: 'monospace'}}>{p.apiKey}</div>
+              <div style={{marginTop: 12, display: 'flex', gap: 16}}>
+                <div><span style={{color: 'var(--text-dim)', fontSize: 12}}>Budget: </span>{p.monthlyBudget > 0 ? `$${p.usedThisMonth}/$${p.monthlyBudget}` : 'Unlimited'}</div>
+              </div>
+              <div style={{marginTop: 8, display: 'flex', gap: 16, fontSize: 13, color: 'var(--text-dim)'}}>
+                <span>{p.totalRequests} requests</span>
+                <span>{formatNum(p.totalTokens)} tokens</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showAdd && (
+        <div className="modal-overlay" onClick={() => setShowAdd(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2>Add Provider</h2>
+            <div className="form-group">
+              <label className="form-label">Type</label>
+              <select className="form-input" value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
+                <option value="openrouter">OpenRouter</option>
+                <option value="groq">Groq</option>
+                <option value="together">Together AI</option>
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Name</label>
+              <input className="form-input" placeholder="my-key" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">API Key</label>
+              <input className="form-input" placeholder="sk-..." value={form.apiKey} onChange={e => setForm({...form, apiKey: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Monthly Budget ($0 = unlimited)</label>
+              <input className="form-input" type="number" value={form.monthlyBudget} onChange={e => setForm({...form, monthlyBudget: Number(e.target.value)})} />
+            </div>
+            <div style={{display: 'flex', gap: 12}}>
+              <button className="btn btn-primary" onClick={addProvider}>Add Provider</button>
+              <button className="btn btn-outline" onClick={() => setShowAdd(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── MODELS PAGE ────────────────────────────────────────────
+function Models() {
+  const { data, loading, refetch } = useFetch('/admin/models', 5000);
+
+  const loadModel = async (name) => {
+    await fetch(API + '/admin/models/load', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    refetch();
+  };
+
+  const unloadModel = async () => {
+    await fetch(API + '/admin/models/unload', { method: 'POST' });
+    refetch();
+  };
+
+  if (loading || !data) return <div className="content"><p>Loading...</p></div>;
+
+  return (
+    <div className="content">
+      <div className="section-header">
+        <div className="section-title">AI Models</div>
+        {data.currentModel && <button className="btn btn-outline" onClick={unloadModel}>Unload Current</button>}
+      </div>
+
+      <div className="grid grid-3" style={{marginBottom: 24}}>
+        <StatCard title="Downloaded" value={data.models.length} sub="GGUF models" />
+        <StatCard title="Loaded" value={data.currentModel || 'None'} color={data.currentModel ? 'green' : 'yellow'} />
+        <StatCard title="Recommended" value={data.recommended.recommended} sub={`for ${data.recommended.vram} RAM`} />
+      </div>
+
+      {data.models.length === 0 ? (
+        <div className="card" style={{textAlign: 'center', padding: 40}}>
+          <p style={{color: 'var(--text-dim)', marginBottom: 12}}>No models downloaded yet.</p>
+          <code style={{display: 'block', padding: 12, background: 'var(--bg3)', borderRadius: 8}}>
+            wolfpak models pull https://huggingface.co/.../model.gguf
+          </code>
+        </div>
+      ) : (
+        <div className="card">
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Model</th><th>Size</th><th>Quantization</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody>
+                {data.models.map((m, i) => (
+                  <tr key={i}>
+                    <td style={{fontWeight: 600}}>{m.name}</td>
+                    <td>{m.sizeGB} GB</td>
+                    <td><span className="badge badge-purple">{m.quantization}</span></td>
+                    <td>{m.loaded ? <span className="badge badge-green"><span className="dot dot-green"></span>Loaded</span> : <span className="badge badge-yellow">Ready</span>}</td>
+                    <td>
+                      {!m.loaded && <button className="btn btn-primary" style={{padding: '6px 14px', fontSize: 12}} onClick={() => loadModel(m.name)}>Load</button>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── CHAT PAGE ──────────────────────────────────────────────
+function Chat() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const messagesEnd = useRef(null);
+
+  const scrollToBottom = () => messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
+  useEffect(scrollToBottom, [messages]);
+
+  const sendMessage = async () => {
+    if (!input.trim() || sending) return;
+    const userMsg = { role: 'user', content: input.trim() };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    setInput('');
+    setSending(true);
+
+    try {
+      const res = await fetch(API + '/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages, model: 'auto' }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessages([...newMessages, { role: 'assistant', content: `Error: ${data.error.message}`, source: 'error' }]);
+      } else {
+        setMessages([...newMessages, {
+          role: 'assistant',
+          content: data.choices[0].message.content,
+          source: data.source,
+          model: data.model,
+        }]);
+      }
+    } catch (e) {
+      setMessages([...newMessages, { role: 'assistant', content: `Connection error: ${e.message}`, source: 'error' }]);
+    }
+    setSending(false);
+  };
+
+  return (
+    <div className="content" style={{height: 'calc(100vh - 65px)', display: 'flex', flexDirection: 'column'}}>
+      <div style={{flex: 1, overflowY: 'auto', paddingBottom: 20}}>
+        {messages.length === 0 && (
+          <div style={{textAlign: 'center', padding: '80px 0', color: 'var(--text-dim)'}}>
+            <div style={{fontSize: 48, marginBottom: 16}}>&#128058;</div>
+            <h2 style={{color: 'var(--text)', marginBottom: 8}}>WOLFPAK Chat</h2>
+            <p>Send a message to chat with your AI cluster.</p>
+          </div>
+        )}
+        {messages.map((msg, i) => (
+          <div key={i} className="chat-msg" style={{justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start'}}>
+            {msg.role !== 'user' && <div className="chat-avatar chat-avatar-ai">W</div>}
+            <div>
+              <div className="chat-bubble" style={msg.role === 'user' ? {background: 'var(--purple)', color: 'white'} : {}}>
+                {msg.content}
+              </div>
+              {msg.source && msg.source !== 'error' && (
+                <div className="chat-meta">{msg.source} | {msg.model}</div>
+              )}
+            </div>
+            {msg.role === 'user' && <div className="chat-avatar chat-avatar-user">U</div>}
+          </div>
+        ))}
+        {sending && (
+          <div className="chat-msg">
+            <div className="chat-avatar chat-avatar-ai">W</div>
+            <div className="chat-bubble" style={{color: 'var(--text-dim)'}}>Thinking...</div>
+          </div>
+        )}
+        <div ref={messagesEnd} />
+      </div>
+      <div className="chat-input-wrap">
+        <textarea
+          className="chat-input"
+          rows={1}
+          placeholder="Send a message..."
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }}}
+        />
+        <button className="btn btn-primary" onClick={sendMessage} disabled={sending}>{sending ? '...' : 'Send'}</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── LOGS PAGE ──────────────────────────────────────────────
+function Logs() {
+  const { data: inferData, loading: l1 } = useFetch('/admin/logs/inference?limit=100', 10000);
+  const { data: eventData, loading: l2 } = useFetch('/admin/logs/events?limit=50', 10000);
+  const [tab, setTab] = useState('inference');
+
+  if (l1 || l2) return <div className="content"><p>Loading...</p></div>;
+
+  return (
+    <div className="content">
+      <div style={{display: 'flex', gap: 8, marginBottom: 20}}>
+        <button className={`btn ${tab === 'inference' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setTab('inference')}>Inference Logs</button>
+        <button className={`btn ${tab === 'events' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setTab('events')}>Node Events</button>
+      </div>
+
+      {tab === 'inference' && (
+        <div className="card">
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Time</th><th>Prompt</th><th>Response</th><th>Source</th><th>Model</th><th>Tokens</th><th>Latency</th><th>Status</th></tr></thead>
+              <tbody>
+                {(inferData?.logs || []).map((log, i) => (
+                  <tr key={i}>
+                    <td style={{fontSize: 12, whiteSpace: 'nowrap'}}>{new Date(log.created_at).toLocaleString()}</td>
+                    <td style={{maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{log.prompt_preview}</td>
+                    <td style={{maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{log.response_preview}</td>
+                    <td><span className={`badge badge-${log.source === 'local' ? 'purple' : 'blue'}`}>{log.source}</span></td>
+                    <td style={{fontSize: 12}}>{log.model}</td>
+                    <td>{log.total_tokens}</td>
+                    <td>{log.latency_ms}ms</td>
+                    <td><span className={`badge badge-${log.status === 'success' ? 'green' : 'red'}`}>{log.status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {(inferData?.logs || []).length === 0 && <p style={{padding: 20, color: 'var(--text-dim)', textAlign: 'center'}}>No inference logs yet</p>}
+          </div>
+        </div>
+      )}
+
+      {tab === 'events' && (
+        <div className="card">
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Time</th><th>Peer</th><th>Event</th><th>Details</th></tr></thead>
+              <tbody>
+                {(eventData?.events || []).map((evt, i) => (
+                  <tr key={i}>
+                    <td style={{fontSize: 12}}>{new Date(evt.created_at).toLocaleString()}</td>
+                    <td style={{fontFamily: 'monospace', fontSize: 12}}>{evt.peer_id.slice(0, 16)}...</td>
+                    <td><span className="badge badge-yellow">{evt.event_type}</span></td>
+                    <td>{evt.details}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {(eventData?.events || []).length === 0 && <p style={{padding: 20, color: 'var(--text-dim)', textAlign: 'center'}}>No events yet</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SYSTEM PAGE ────────────────────────────────────────────
+function System() {
+  const { data, loading } = useFetch('/admin/system', 5000);
+  if (loading || !data) return <div className="content"><p>Loading...</p></div>;
+
+  const createBackup = async () => {
+    const res = await fetch(API + '/admin/capsule/create', { method: 'POST' });
+    const json = await res.json();
+    alert(json.success ? `Capsule saved: ${json.path}` : `Error: ${json.error}`);
+  };
+
+  return (
+    <div className="content">
+      <div className="section-header">
+        <div className="section-title">System</div>
+        <button className="btn btn-primary" onClick={createBackup}>Create Capsule Backup</button>
+      </div>
+
+      <div className="grid grid-3" style={{marginBottom: 24}}>
+        <StatCard title="Platform" value={`${data.platform} ${data.arch}`} sub={data.hostname} />
+        <StatCard title="Memory" value={`${data.freeRAM}/${data.totalRAM} GB`} sub="free / total" color={data.freeRAM < 4 ? 'red' : 'green'} />
+        <StatCard title="Uptime" value={formatUptime(data.uptime)} sub={`Node ${data.nodeVersion}`} />
+      </div>
+
+      <div className="grid grid-2">
+        <div className="card">
+          <div className="card-title">Hardware</div>
+          <table><tbody>
+            <InfoRow label="CPU" value={data.cpu} />
+            <InfoRow label="Cores" value={data.cores} />
+            <InfoRow label="Load Avg" value={data.loadAvg.map(l => l.toFixed(2)).join(', ')} />
+            <InfoRow label="DB Size" value={`${data.dbSizeKB} KB`} />
+            <InfoRow label="Config" value={data.configDir} mono />
+          </tbody></table>
+        </div>
+
+        <div className="card">
+          <div className="card-title">Quick Actions</div>
+          <div style={{display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12}}>
+            <button className="btn btn-outline" onClick={createBackup}>Create Pack Capsule</button>
+            <button className="btn btn-outline" onClick={() => window.open(API + '/health')}>View Health Endpoint</button>
+            <button className="btn btn-outline" onClick={() => window.open(API + '/v1/models')}>View Models API</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── HELPERS ────────────────────────────────────────────────
+function formatNum(n) {
+  if (!n) return '0';
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return n.toString();
+}
+
+function formatUptime(seconds) {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+// ─── APP ────────────────────────────────────────────────────
+function App() {
+  const [page, setPage] = useState('dashboard');
+
+  const pages = {
+    dashboard: { label: 'Dashboard', icon: '\u25A6', component: Dashboard },
+    pack: { label: 'Pack', icon: '\uD83D\uDC3A', component: Pack },
+    providers: { label: 'Providers', icon: '\u26A1', component: Providers },
+    models: { label: 'Models', icon: '\uD83E\uDDE0', component: Models },
+    chat: { label: 'Chat', icon: '\uD83D\uDCAC', component: Chat },
+    logs: { label: 'Logs', icon: '\uD83D\uDCCA', component: Logs },
+    system: { label: 'System', icon: '\u2699\uFE0F', component: System },
+  };
+
+  const PageComponent = pages[page].component;
+
+  return (
+    <div className="app">
+      <div className="sidebar">
+        <div className="sidebar-logo">
+          WOLFPAK <span>Command Center v0.1.0</span>
+        </div>
+        <div className="nav">
+          {Object.entries(pages).map(([key, val]) => (
+            <div key={key} className={`nav-item ${page === key ? 'active' : ''}`} onClick={() => setPage(key)}>
+              <span className="nav-icon">{val.icon}</span>
+              {val.label}
+            </div>
+          ))}
+        </div>
+        <div className="sidebar-footer">
+          MIT License | Open Source<br/>
+          github.com/ozzyai-sudo/wolfpak
+        </div>
+      </div>
+      <div className="main">
+        <div className="topbar">
+          <h1>{pages[page].icon} {pages[page].label}</h1>
+          <span className="badge badge-green"><span className="dot dot-green"></span> Connected</span>
+        </div>
+        <PageComponent />
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
