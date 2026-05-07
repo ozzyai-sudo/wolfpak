@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>WOLFPAK AI — CLI Command Reference</title>
+<style>
+@page { size: letter; margin: 1in; }
+@media print { body { font-size: 11pt; } .no-print { display: none; } }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  max-width: 900px; margin: 0 auto; padding: 40px; color: #1a1a1a;
+  line-height: 1.6;
+}
+h1 { color: #7C3AED; border-bottom: 2px solid #7C3AED; padding-bottom: 8px; }
+h2 { color: #5B21B6; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+h3 { color: #6D28D9; }
+code { background: #f4f0ff; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+pre { background: #1e1e2e; color: #cdd6f4; padding: 16px; border-radius: 8px; overflow-x: auto; }
+pre code { background: none; color: inherit; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+th { background: #7C3AED; color: white; padding: 10px 12px; text-align: left; }
+td { border: 1px solid #ddd; padding: 8px 12px; }
+tr:nth-child(even) { background: #f9f5ff; }
+hr { border: none; border-top: 1px solid #e0d4f5; margin: 30px 0; }
+.cover { text-align: center; margin-bottom: 60px; padding: 60px 0; }
+.cover h1 { font-size: 3em; border: none; margin-bottom: 0; }
+.cover .subtitle { font-size: 1.4em; color: #7C3AED; margin: 10px 0; }
+.cover .tagline { color: #666; font-size: 1.1em; }
+.cover .date { color: #999; margin-top: 20px; }
+.print-btn { position: fixed; top: 20px; right: 20px; background: #7C3AED; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; }
+.print-btn:hover { background: #5B21B6; }
+</style>
+</head>
+<body>
+<button class="print-btn no-print" onclick="window.print()">Save as PDF</button>
+<div class="cover">
+<h1>WOLFPAK AI</h1>
+<p class="subtitle">CLI Command Reference v0.1.0</p>
+<p class="tagline">Pool your machines. Own your AI.</p>
+<p class="date">May 2026</p>
+</div>
+<h1 id="what-is-wolfpak-ai">What is WOLFPAK AI?</h1>
+<p>WOLFPAK AI lets a small group — a family, a startup, a few friends —
+pool their laptops and desktops into one private AI cluster called a
+<strong>pack</strong>.</p>
+<p>Everyone installs the CLI, someone creates a pack, shares an invite
+link, and the machines form a peer-to-peer mesh network. Queries route
+to whichever member has the best model loaded, or fall back to shared
+API providers.</p>
+<p><strong>Key Features:</strong></p>
+<ul>
+<li>P2P mesh networking via libp2p (no central server)</li>
+<li>Local GGUF model inference via node-llama-cpp</li>
+<li>OpenAI-compatible API at <code>localhost:8787/v1</code></li>
+<li>Shared API providers with per-member budgets</li>
+<li>AES-256-GCM encrypted pack capsule backups</li>
+<li>Ed25519 cryptographic identity per node</li>
+</ul>
+<hr />
+<h1 id="installation">Installation</h1>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install globally via npm</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> install <span class="at">-g</span> wolfpak-ai</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Or clone and run from source</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/ozzyai-sudo/wolfpak.git</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> wolfpak</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> install</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run dev <span class="at">--</span> <span class="op">&lt;</span>command<span class="op">&gt;</span></span></code></pre></div>
+<p><strong>Requirements:</strong> Node.js 18+ (20+ recommended)</p>
+<hr />
+<h1 id="quick-start">Quick Start</h1>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Initialize your node</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> init <span class="at">--name</span> <span class="st">&quot;my-laptop&quot;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Create a pack</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> create my-pack</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Share the invite link + encryption key with your crew</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. They join with:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> join <span class="op">&lt;</span>invite-link<span class="op">&gt;</span> -k <span class="op">&lt;</span>encryption-key<span class="op">&gt;</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Start the node</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> start</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># 6. AI is now live at http://localhost:8787/v1/chat/completions</span></span></code></pre></div>
+<h1 id="command-reference">Command Reference</h1>
+<h2 id="wolfpak-init">wolfpak init</h2>
+<p>Initialize WOLFPAK on this machine. Creates a persistent Ed25519
+identity stored at <code>~/.wolfpak/identity.json</code>.</p>
+<pre><code>wolfpak init [options]</code></pre>
+<p><strong>Options:</strong></p>
+<table>
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 68%" />
+</colgroup>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-n, --name &lt;name&gt;</code></td>
+<td>Display name for this node (default: auto-generated)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> init <span class="at">--name</span> <span class="st">&quot;office-desktop&quot;</span></span></code></pre></div>
+<p><strong>Output:</strong></p>
+<pre><code>✓ Identity created
+  Peer ID:  wpk_70dad0809a3db615c7d88a5944dc8f5a
+  Name:     office-desktop
+  Config:   /home/user/.wolfpak</code></pre>
+<hr />
+<h2 id="wolfpak-create">wolfpak create</h2>
+<p>Create a new pack. You become the <strong>Alpha</strong> (leader) of
+the pack. Generates an invite link and encryption key to share with
+others.</p>
+<pre><code>wolfpak create &lt;name&gt;</code></pre>
+<p><strong>Arguments:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>Name for your pack</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> create my-startup</span></code></pre></div>
+<p><strong>Output:</strong></p>
+<pre><code>✓ Pack &quot;my-startup&quot; created
+  Pack ID:  pack_9293f5307d05e9f1dce10a1f
+  Role:     Alpha (leader)
+  Members:  1
+
+Share this invite link with your pack:
+wolfpak://join/eyJwYWNr...
+
+Encryption key (share securely — needed to join):
+G76ODWsRSx+oeT4JFU75ir/fMFEUiYdglqCy7iWy+4A=</code></pre>
+<p><strong>Important:</strong> Share the invite link and encryption key
+through separate secure channels.</p>
+<h2 id="wolfpak-join">wolfpak join</h2>
+<p>Join an existing pack using an invite link and encryption key.</p>
+<pre><code>wolfpak join &lt;invite&gt; [options]</code></pre>
+<p><strong>Arguments:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>invite</code></td>
+<td>The <code>wolfpak://join/...</code> invite link</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-k, --key &lt;key&gt;</code></td>
+<td>Pack encryption key (required)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> join wolfpak://join/eyJwYWNr... <span class="at">-k</span> G76ODWsRSx+oeT4JFU75ir...</span></code></pre></div>
+<hr />
+<h2 id="wolfpak-start">wolfpak start</h2>
+<p>Start the WOLFPAK node. This launches both the P2P mesh network and
+the OpenAI-compatible API server.</p>
+<pre><code>wolfpak start [options]</code></pre>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-p, --port &lt;port&gt;</code></td>
+<td>Mesh network port</td>
+<td><code>4002</code></td>
+</tr>
+<tr>
+<td><code>-a, --api-port &lt;port&gt;</code></td>
+<td>API server port</td>
+<td><code>8787</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> start <span class="at">--port</span> 4002 <span class="at">--api-port</span> 8787</span></code></pre></div>
+<p><strong>What happens:</strong></p>
+<ol type="1">
+<li>Mesh network starts on the specified port</li>
+<li>Node discovers peers via mDNS (local network) and DHT</li>
+<li>API server starts at
+<code>http://localhost:&lt;api-port&gt;/v1/</code></li>
+<li>Node announces itself to the pack</li>
+</ol>
+<p><strong>API Endpoints (once running):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/health</code></td>
+<td>GET</td>
+<td>Node health check</td>
+</tr>
+<tr>
+<td><code>/v1/chat/completions</code></td>
+<td>POST</td>
+<td>Chat completions (OpenAI-compatible)</td>
+</tr>
+<tr>
+<td><code>/v1/models</code></td>
+<td>GET</td>
+<td>List available models</td>
+</tr>
+<tr>
+<td><code>/v1/pack/status</code></td>
+<td>GET</td>
+<td>Pack status and members</td>
+</tr>
+<tr>
+<td><code>/v1/pack/members</code></td>
+<td>GET</td>
+<td>List pack members</td>
+</tr>
+</tbody>
+</table>
+<h2 id="wolfpak-status">wolfpak status</h2>
+<p>Show the full status of your node, pack, members, providers, and
+models.</p>
+<pre><code>wolfpak status</code></pre>
+<p><strong>Example Output:</strong></p>
+<pre><code>  WOLFPAK STATUS
+
+  Node
+    Peer ID:      wpk_70dad0809a3db615c7d88a5944dc8f5a
+    Name:         ozzy-macbook
+    RAM:          32GB
+    Platform:     darwin x64
+    Mesh:         ONLINE
+
+  Pack
+    Name:         enlite-pack
+    Pack ID:      pack_9293f5307d05e9f1dce10a1f
+    Members:      3
+    Providers:    2
+    Routing:      best-gpu
+
+  Members
+    α ● ozzy-macbook (you) — relay, storage, inference, embedding
+    • ● vps-main — relay, storage, inference, embedding
+    • ● imac-backup — relay, storage, embedding
+
+  Models
+    gemma-3-27b-Q4_K_M (16.1GB, Q4_K_M) [LOADED]</code></pre>
+<hr />
+<h2 id="wolfpak-chat">wolfpak chat</h2>
+<p>Start an interactive chat session. Uses the inference routing system:
+local model first, then pack mesh, then shared providers.</p>
+<pre><code>wolfpak chat</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code>  WOLFPAK Chat
+  Type your message. Ctrl+C to exit.
+
+  you &gt; What is the capital of France?
+  ai  &gt; The capital of France is Paris.
+         [local | gemma-3-27b-Q4_K_M]</code></pre>
+<p>Type <code>exit</code> or <code>quit</code> or press
+<code>Ctrl+C</code> to end the session.</p>
+<h2 id="wolfpak-models">wolfpak models</h2>
+<p>Manage AI models (GGUF format). Subcommands:</p>
+<h3 id="wolfpak-models-list">wolfpak models list</h3>
+<p>List all downloaded models in <code>~/.wolfpak/models/</code>.</p>
+<pre><code>wolfpak models list</code></pre>
+<h3 id="wolfpak-models-pull">wolfpak models pull</h3>
+<p>Download a GGUF model from a URL (typically HuggingFace).</p>
+<pre><code>wolfpak models pull &lt;url&gt;</code></pre>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> models pull https://huggingface.co/bartowski/gemma-3-4b-it-GGUF/resolve/main/gemma-3-4b-it-Q4_K_M.gguf</span></code></pre></div>
+<h3 id="wolfpak-models-load">wolfpak models load</h3>
+<p>Load a downloaded model into memory for local inference.</p>
+<pre><code>wolfpak models load &lt;name&gt;</code></pre>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> models load gemma-3-4b-it-Q4_K_M</span></code></pre></div>
+<h3 id="wolfpak-models-recommend">wolfpak models recommend</h3>
+<p>Auto-detect your hardware and recommend the optimal model.</p>
+<pre><code>wolfpak models recommend</code></pre>
+<p><strong>Recommended Models by RAM:</strong></p>
+<table>
+<thead>
+<tr>
+<th>RAM</th>
+<th>Recommended Model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4 GB</td>
+<td>Gemma 3 1B (Q4_K_M)</td>
+</tr>
+<tr>
+<td>8 GB</td>
+<td>Gemma 3 4B (Q4_K_M)</td>
+</tr>
+<tr>
+<td>16 GB</td>
+<td>Gemma 3 12B (Q4_K_M)</td>
+</tr>
+<tr>
+<td>32 GB</td>
+<td>Gemma 3 27B (Q4_K_M)</td>
+</tr>
+<tr>
+<td>64 GB+</td>
+<td>Qwen 2.5 32B (Q4_K_M)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="wolfpak-provider">wolfpak provider</h2>
+<p>Manage shared API providers. Pool API keys across your pack so
+everyone can use them.</p>
+<h3 id="wolfpak-provider-add">wolfpak provider add</h3>
+<p>Add a shared API provider to the pack.</p>
+<pre><code>wolfpak provider add &lt;type&gt; &lt;name&gt; &lt;apiKey&gt; [options]</code></pre>
+<p><strong>Arguments:</strong></p>
+<table>
+<colgroup>
+<col style="width: 43%" />
+<col style="width: 56%" />
+</colgroup>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code></td>
+<td>Provider type: <code>openrouter</code>, <code>groq</code>,
+<code>together</code>, <code>openai</code>, <code>anthropic</code></td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>Friendly name for this provider</td>
+</tr>
+<tr>
+<td><code>apiKey</code></td>
+<td>The API key</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Options:</strong></p>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 46%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-b, --budget &lt;amount&gt;</code></td>
+<td>Monthly budget in dollars (0 = unlimited)</td>
+<td><code>0</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Add OpenRouter with $50/month budget</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> provider add openrouter my-key sk-or-... <span class="at">-b</span> 50</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Add Groq (unlimited)</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> provider add groq fast-llm gsk_...</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Add Anthropic</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> provider add anthropic claude sk-ant-...</span></code></pre></div>
+<h3 id="wolfpak-provider-list">wolfpak provider list</h3>
+<p>List all shared providers in the pack.</p>
+<pre><code>wolfpak provider list</code></pre>
+<hr />
+<h2 id="wolfpak-invite">wolfpak invite</h2>
+<p>Show the invite link and encryption key for the current pack.</p>
+<pre><code>wolfpak invite</code></pre>
+<p>Share the invite link publicly and the encryption key privately
+(separate channels).</p>
+<h2 id="wolfpak-capsule">wolfpak capsule</h2>
+<p>Encrypted backup and restore of pack state.</p>
+<h3 id="wolfpak-capsule-create">wolfpak capsule create</h3>
+<p>Create an AES-256-GCM encrypted backup of the entire pack (identity,
+members, providers, settings). Saved as a <code>.wpk</code> file.</p>
+<pre><code>wolfpak capsule create [options]</code></pre>
+<p><strong>Options:</strong></p>
+<table>
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 68%" />
+</colgroup>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-o, --output &lt;path&gt;</code></td>
+<td>Output file path (default: current directory)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> capsule create <span class="at">-o</span> ~/backups/my-pack.wpk</span></code></pre></div>
+<h3 id="wolfpak-capsule-restore">wolfpak capsule restore</h3>
+<p>Restore a pack from an encrypted capsule backup.</p>
+<pre><code>wolfpak capsule restore &lt;file&gt; [options]</code></pre>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-k, --key &lt;key&gt;</code></td>
+<td>Pack encryption key (required)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">wolfpak</span> capsule restore ~/backups/my-pack.wpk <span class="at">-k</span> G76ODWsRSx+oeT4JFU75ir...</span></code></pre></div>
+<hr />
+<h2 id="wolfpak-system-info">wolfpak system-info</h2>
+<p>Show hardware information and recommended capabilities.</p>
+<pre><code>wolfpak system-info</code></pre>
+<hr />
+<h2 id="wolfpak-kill">wolfpak kill</h2>
+<p>Stop the WOLFPAK node (mesh and API server).</p>
+<pre><code>wolfpak kill</code></pre>
+<h1 id="using-the-api">Using the API</h1>
+<p>Once <code>wolfpak start</code> is running, you have an
+OpenAI-compatible API at <code>localhost:8787</code>. Use it with any
+OpenAI client library:</p>
+<h3 id="curl">curl</h3>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://localhost:8787/v1/chat/completions <span class="dt">\</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-H</span> <span class="st">&quot;Content-Type: application/json&quot;</span> <span class="dt">\</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">&#39;{</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="st">    &quot;model&quot;: &quot;auto&quot;,</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="st">    &quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Hello!&quot;}]</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a><span class="st">  }&#39;</span></span></code></pre></div>
+<h3 id="python-openai-sdk">Python (OpenAI SDK)</h3>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> openai <span class="im">import</span> OpenAI</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> OpenAI(base_url<span class="op">=</span><span class="st">&quot;http://localhost:8787/v1&quot;</span>, api_key<span class="op">=</span><span class="st">&quot;wolfpak&quot;</span>)</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>response <span class="op">=</span> client.chat.completions.create(</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">&quot;auto&quot;</span>,</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>    messages<span class="op">=</span>[{<span class="st">&quot;role&quot;</span>: <span class="st">&quot;user&quot;</span>, <span class="st">&quot;content&quot;</span>: <span class="st">&quot;Hello!&quot;</span>}]</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(response.choices[<span class="dv">0</span>].message.content)</span></code></pre></div>
+<h3 id="javascript">JavaScript</h3>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> response <span class="op">=</span> <span class="cf">await</span> <span class="fu">fetch</span>(<span class="st">&#39;http://localhost:8787/v1/chat/completions&#39;</span><span class="op">,</span> {</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">method</span><span class="op">:</span> <span class="st">&#39;POST&#39;</span><span class="op">,</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">headers</span><span class="op">:</span> { <span class="st">&#39;Content-Type&#39;</span><span class="op">:</span> <span class="st">&#39;application/json&#39;</span> }<span class="op">,</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">body</span><span class="op">:</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>({</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">model</span><span class="op">:</span> <span class="st">&#39;auto&#39;</span><span class="op">,</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">messages</span><span class="op">:</span> [{ <span class="dt">role</span><span class="op">:</span> <span class="st">&#39;user&#39;</span><span class="op">,</span> <span class="dt">content</span><span class="op">:</span> <span class="st">&#39;Hello!&#39;</span> }]</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> data <span class="op">=</span> <span class="cf">await</span> response<span class="op">.</span><span class="fu">json</span>()<span class="op">;</span></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a><span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(data<span class="op">.</span><span class="at">choices</span>[<span class="dv">0</span>]<span class="op">.</span><span class="at">message</span><span class="op">.</span><span class="at">content</span>)<span class="op">;</span></span></code></pre></div>
+<h1 id="how-inference-routing-works">How Inference Routing Works</h1>
+<p>WOLFPAK uses a 3-tier routing strategy:</p>
+<pre><code>Request comes in
+    │
+    ▼
+┌─────────────────────┐
+│ 1. Local Model?     │──── Yes ──▶ Run locally (fastest)
+│    (GGUF loaded)    │
+└─────────┬───────────┘
+          │ No
+          ▼
+┌─────────────────────┐
+│ 2. Pack Mesh?       │──── Yes ──▶ Route to best GPU peer
+│    (peer has model)  │
+└─────────┬───────────┘
+          │ No
+          ▼
+┌─────────────────────┐
+│ 3. Shared Provider? │──── Yes ──▶ Use pooled API key
+│    (API key exists)  │
+└─────────┬───────────┘
+          │ No
+          ▼
+      Error: No inference source available</code></pre>
+<h1 id="security">Security</h1>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node Identity</td>
+<td>Ed25519 keypairs</td>
+</tr>
+<tr>
+<td>Mesh Encryption</td>
+<td>Noise protocol (all traffic)</td>
+</tr>
+<tr>
+<td>Pack Capsules</td>
+<td>AES-256-GCM</td>
+</tr>
+<tr>
+<td>Peer Discovery</td>
+<td>mDNS (local) + Kademlia DHT</td>
+</tr>
+<tr>
+<td>Message Passing</td>
+<td>GossipSub (encrypted)</td>
+</tr>
+</tbody>
+</table>
+<h1 id="file-locations">File Locations</h1>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Identity</td>
+<td><code>~/.wolfpak/identity.json</code></td>
+</tr>
+<tr>
+<td>Pack config</td>
+<td><code>~/.wolfpak/pack.json</code></td>
+</tr>
+<tr>
+<td>Models</td>
+<td><code>~/.wolfpak/models/</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><strong>GitHub:</strong> <a
+href="https://github.com/ozzyai-sudo/wolfpak">github.com/ozzyai-sudo/wolfpak</a></p>
+<p><strong>License:</strong> MIT — Free forever. Use it, fork it, build
+on it.</p>
+</body></html>
