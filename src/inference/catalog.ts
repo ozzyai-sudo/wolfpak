@@ -78,6 +78,28 @@ export const MODEL_CATALOG: CatalogModel[] = [
 
   // ─── MEDIUM (16GB RAM) ────────────────────────────────────
   {
+    id: 'deepseek-r1-7b',
+    name: 'DeepSeek R1 7B',
+    description: 'Strong reasoning and chain-of-thought',
+    size: '4.7 GB',
+    sizeBytes: 4_700_000_000,
+    minRAM: 16,
+    quantization: 'Q4_K_M',
+    url: 'https://huggingface.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF/resolve/main/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf',
+    family: 'DeepSeek',
+  },
+  {
+    id: 'mistral-7b',
+    name: 'Mistral 7B',
+    description: 'Fast and efficient, great quality for size',
+    size: '4.1 GB',
+    sizeBytes: 4_100_000_000,
+    minRAM: 16,
+    quantization: 'Q4_K_M',
+    url: 'https://huggingface.co/bartowski/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/Mistral-7B-Instruct-v0.3-Q4_K_M.gguf',
+    family: 'Mistral',
+  },
+  {
     id: 'qwen3-8b',
     name: 'Qwen 3 8B',
     description: 'Strong reasoning, coding, and chat',
@@ -112,6 +134,39 @@ export const MODEL_CATALOG: CatalogModel[] = [
   },
 
   // ─── LARGE (32GB RAM) ─────────────────────────────────────
+  {
+    id: 'phi4-14b',
+    name: 'Phi-4 14B',
+    description: 'Microsoft, excellent at coding and reasoning',
+    size: '8.4 GB',
+    sizeBytes: 8_400_000_000,
+    minRAM: 32,
+    quantization: 'Q4_K_M',
+    url: 'https://huggingface.co/bartowski/phi-4-GGUF/resolve/main/phi-4-Q4_K_M.gguf',
+    family: 'Phi',
+  },
+  {
+    id: 'deepseek-r1-14b',
+    name: 'DeepSeek R1 14B',
+    description: 'Advanced reasoning, math, and analysis',
+    size: '9.0 GB',
+    sizeBytes: 9_000_000_000,
+    minRAM: 32,
+    quantization: 'Q4_K_M',
+    url: 'https://huggingface.co/bartowski/DeepSeek-R1-Distill-Qwen-14B-GGUF/resolve/main/DeepSeek-R1-Distill-Qwen-14B-Q4_K_M.gguf',
+    family: 'DeepSeek',
+  },
+  {
+    id: 'mistral-small-24b',
+    name: 'Mistral Small 24B',
+    description: 'Mistral flagship small, strong across all tasks',
+    size: '14.0 GB',
+    sizeBytes: 14_000_000_000,
+    minRAM: 32,
+    quantization: 'Q4_K_M',
+    url: 'https://huggingface.co/bartowski/Mistral-Small-24B-Instruct-2501-GGUF/resolve/main/Mistral-Small-24B-Instruct-2501-Q4_K_M.gguf',
+    family: 'Mistral',
+  },
   {
     id: 'qwen3-14b',
     name: 'Qwen 3 14B',
